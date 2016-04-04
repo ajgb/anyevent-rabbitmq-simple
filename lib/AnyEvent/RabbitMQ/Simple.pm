@@ -650,7 +650,7 @@ C<on_success> callbacks.
         ...
     );
 
-Returns configured the object using following parameters:
+Returns configured object using following parameters:
 
 =head3 host
 
@@ -708,7 +708,7 @@ Password.
         ...
     );
 
-Connection tuning options.
+Optional connection tuning options.
 
 =head3 timeout
 
@@ -819,13 +819,6 @@ Optional list of queues to declare with their configuration options.
 
 See L<AnyEvent::RabbitMQ::Channel/"declare_queue"> for details.
 
-=head3 gen_queue
-
-    my $gen_queue = $rmq->gen_queue;
-
-Name of the generated queue if no queues were declared (or queue with empty name
-has been specified).
-
 =head3 bind_exchanges
 
     my $rmq = AnyEvent::RabbitMQ::Simple->new(
@@ -876,7 +869,7 @@ See L<AnyEvent::RabbitMQ::Channel/"bind_queue"> for details.
         ...
     );
 
-Generic error handling callback. The value of C<$event> is one of:
+Required catch-all error handling callback. The value of C<$event> is one of:
 
 =over 4
 
@@ -937,6 +930,13 @@ after all the configuration steps were successful.
     $rmq->disconnect();
 
 Disconnects from RabbitMQ server.
+
+=head2 gen_queue
+
+    my $gen_queue = $rmq->gen_queue;
+
+Name of the generated queue if no queues were declared (or queue with empty name
+has been specified).
 
 =head1 SEE ALSO
 
