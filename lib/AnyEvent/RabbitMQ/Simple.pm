@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 package AnyEvent::RabbitMQ::Simple;
+
 use AnyEvent;
 use AnyEvent::RabbitMQ;
 use Moo;
@@ -31,7 +32,7 @@ has 'pass' => (
     default => '',
 );
 
-has [qw( failure_cb )] => (
+has 'failure_cb' => (
     is => 'ro',
     required => 1,
 );
@@ -40,10 +41,10 @@ has [qw( tls tune )] => (
     is => 'ro',
 );
 
-has [qw(exchange exchanges queues bind_exchanges bind_queues)] => (
+has $_ => (
     is => 'ro',
-    predicate => 1,
-);
+    predicate => "_has_$_",
+) for qw(exchange exchanges queue queues bind_exchanges bind_queues);
 
 has 'timeout' => (
     is => 'ro',
@@ -64,11 +65,6 @@ has 'gen_queue' => (
     is => 'rw',
 );
 
-has 'queue' => (
-    is => 'ro',
-    predicate => 1,
-);
-
 has 'verbose' => (
     is => 'ro',
     default => 0,
@@ -83,7 +79,7 @@ sub _handle_error {
     my $self = shift;
 
     my $guard = $self->_guard;
-    
+
     # cancel pending actions
     delete $guard->{flows};
 
@@ -141,8 +137,8 @@ sub _open_channel {
             my $channel = shift;
             $self->_guard->{channel} = $channel;
 
-            my $cv_dec_ex = $self->_guard->{flows}->{cv_dec_ex} = AE::cv; 
-            my $cv_dec_q = $self->_guard->{flows}->{cv_dec_q} = AE::cv; 
+            my $cv_dec_ex = $self->_guard->{flows}->{cv_dec_ex} = AE::cv;
+            my $cv_dec_q = $self->_guard->{flows}->{cv_dec_q} = AE::cv;
             my $cv_bind_ex = $self->_guard->{flows}->{cv_bind_ex} = AE::cv;
             my $cv_bind_q = $self->_guard->{flows}->{cv_bind_q} = AE::cv;
             my $cv_confirm_channel = $self->_guard->{flows}->{cv_confirm_channel} = AE::cv;
@@ -238,10 +234,10 @@ sub _declare_exchanges {
 
     $cv->begin( sub { shift->send(1) } );
 
-    if ( $self->has_exchange ) {
+    if ( $self->_has_exchange ) {
         $self->_declare_exchange($cv, $self->exchange);
     }
-    if ( $self->has_exchanges ) {
+    if ( $self->_has_exchanges ) {
         my @exchanges = @{ $self->exchanges || [] };
         for ( my $i = 0; $i < scalar @exchanges; $i += 2 ) {
             my $name = $exchanges[$i];
@@ -283,10 +279,10 @@ sub _declare_queues {
 
     $cv->begin( sub { shift->send(1) } );
 
-    if ( $self->has_queue ) {
+    if ( $self->_has_queue ) {
         $self->_declare_queue($cv, $self->queue);
     }
-    if ( $self->has_queues ) {
+    if ( $self->_has_queues ) {
         my @queues = @{ $self->queues || [] };
         for ( my $i = 0; $i < scalar @queues; $i += 2 ) {
             my $name = $queues[$i];
@@ -345,7 +341,7 @@ sub _bind_exchanges {
 
     $cv->begin( sub { shift->send(1) } );
 
-    if ( $self->has_bind_exchanges ) {
+    if ( $self->_has_bind_exchanges ) {
         my @pairs;
         my $bind_exchanges = $self->bind_exchanges;
         if ( ref $bind_exchanges eq 'ARRAY' ) {
@@ -395,7 +391,7 @@ sub _bind_queues {
 
     $cv->begin( sub { shift->send(1) } );
 
-    if ( $self->has_bind_queues ) {
+    if ( $self->_has_bind_queues ) {
         my @pairs;
         my $bind_queues = $self->bind_queues;
         if ( ref $bind_queues eq 'ARRAY' ) {
@@ -471,7 +467,7 @@ sub _bind_queue {
             $loop->croak("[ERROR] $event($details): $why" );
         },
 
-        # routing layout 
+        # routing layout
         # [========== exchanges ===================] [===== queues ==============]
         # [             (type/routing key)         ] [        (routing key) ]
         #  logger ----------> stats -------------->   stats-logs
@@ -701,6 +697,19 @@ User name.
 
 Password.
 
+=head3 tune
+
+    my $rmq = AnyEvent::RabbitMQ::Simple->new(
+        tune => {
+            heartbeat => $connection_heartbeat,
+            channel_max => $max_channel_number,
+            frame_max => $max_frame_size
+        },
+        ...
+    );
+
+Connection tuning options.
+
 =head3 timeout
 
     my $rmq = AnyEvent::RabbitMQ::Simple->new(
@@ -785,7 +794,7 @@ See L<AnyEvent::RabbitMQ::Channel/"declare_exchange (%args)"> for details.
 
 Optional name of queue to declare with its default configuration options.
 
-If no queues were declared or empty name has been specified a unique 
+If no queues were declared or empty name has been specified a unique
 generated queue name will be available:
 
     my $gen_queue = $rmq->gen_queue;
@@ -809,6 +818,13 @@ See L<AnyEvent::RabbitMQ::Channel/"declare_queue"> for details.
 Optional list of queues to declare with their configuration options.
 
 See L<AnyEvent::RabbitMQ::Channel/"declare_queue"> for details.
+
+=head3 gen_queue
+
+    my $gen_queue = $rmq->gen_queue;
+
+Name of the generated queue if no queues were declared (or queue with empty name
+has been specified).
 
 =head3 bind_exchanges
 
@@ -914,7 +930,7 @@ C<queue:$name_of_queue, exchange:$name_of_exchange>.
     );
 
 Returns the AnyEvent condvar that returns L<AnyEvent::RabbitMQ::Channel> object
-after all the configuration has been successful.
+after all the configuration steps were successful.
 
 =head2 disconnect
 
@@ -927,6 +943,8 @@ Disconnects from RabbitMQ server.
 =over 4
 
 =item * L<AnyEvent::RabbitMQ>
+
+=item * L<https://www.rabbitmq.com/>
 
 =back
 
