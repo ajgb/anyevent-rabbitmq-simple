@@ -2,7 +2,7 @@ NAME
     AnyEvent::RabbitMQ::Simple - Easy to use asynchronous AMQP client
 
 VERSION
-    version 0.01
+    version 0.02
 
 SYNOPSIS
         use strict;
@@ -213,7 +213,7 @@ METHODS
             ...
         );
 
-    Returns configured the object using following parameters:
+    Returns configured object using following parameters:
 
    host
         my $rmq = AnyEvent::RabbitMQ::Simple->new(
@@ -265,7 +265,7 @@ METHODS
             ...
         );
 
-    Connection tuning options.
+    Optional connection tuning options.
 
    timeout
         my $rmq = AnyEvent::RabbitMQ::Simple->new(
@@ -372,12 +372,6 @@ METHODS
 
     See "declare_queue" in AnyEvent::RabbitMQ::Channel for details.
 
-   gen_queue
-        my $gen_queue = $rmq->gen_queue;
-
-    Name of the generated queue if no queues were declared (or queue with
-    empty name has been specified).
-
    bind_exchanges
         my $rmq = AnyEvent::RabbitMQ::Simple->new(
             bind_exchanges => [
@@ -425,7 +419,8 @@ METHODS
             ...
         );
 
-    Generic error handling callback. The value of $event is one of:
+    Required catch-all error handling callback. The value of $event is one
+    of:
 
     ConnectOnFailure
     ConnectOnReadFailure
@@ -469,6 +464,12 @@ METHODS
         $rmq->disconnect();
 
     Disconnects from RabbitMQ server.
+
+  gen_queue
+        my $gen_queue = $rmq->gen_queue;
+
+    Name of the generated queue if no queues were declared (or queue with
+    empty name has been specified).
 
 SEE ALSO
     *   AnyEvent::RabbitMQ
